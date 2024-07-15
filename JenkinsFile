@@ -1,0 +1,48 @@
+pipeline {
+    agent {
+        docker {
+            image 'python:3.9-slim' // Replace with your desired Python image version
+            args '--shm-size=2g' // Optional: Increase shared memory for large data processing
+        }
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'master', // Change branch as needed
+                    credentialsId: 'your-git-credentials-id', // Replace with your Git credential ID
+                    url: 'https://github.com/your-username/your-repo.git' // Replace with your Git repository URL
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                sh 'pip install -r requirements.txt' // Replace with your dependency installation command
+            }
+        }
+        stage('Build and Test') {
+            steps {
+                sh 'make test' // Replace with your build and test command
+            }
+        }
+        stage('Build Docker Image (Optional)') {
+            when {
+                expression { // Optional: Only build image on push to specific branch
+                    branch == 'master'
+                }
+            }
+            steps {
+                sh 'docker build -t your-image-name .' // Replace with your Dockerfile location and image name
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: '**/*.log' // Archive logs from all stages
+        }
+        success {
+            // Optional: Send notification on successful build
+            // successNotifier(... )
+        }
+    }
+}
